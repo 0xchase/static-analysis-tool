@@ -1,0 +1,3 @@
+echo Copied both to /home/ghidra_scripts
+cp PCodeDumpSF.java ~/ghidra_scripts/PCodeDumpSF.java
+cp PCodeDump.java ~/ghidra_scripts/PCodeDump.java
