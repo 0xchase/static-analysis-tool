@@ -1,0 +1,5 @@
+cd ..
+./ghidra-headless-decompiler/gd_decomp.sh $1 $2
+rm tmp_ghidra_project.gpr
+rm -r tmp_ghidra_project.rep
+cd binaries
