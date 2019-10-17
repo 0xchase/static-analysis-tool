@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
   modified = 0;
   int num = 0;
-  for (int i = 0; i < 63; i++) {
+  for (int i = 0; i < 128; i++) {
     num++;
   }
   strncpy(buffer, argv[1], num);
