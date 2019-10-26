@@ -11,16 +11,22 @@ import subprocess
 # Figure out what libraries to add
 
 global code
+global fixes
+global filename
+
+filename = "grep.c"
+fixes = 0
 
 def main():
+    global filename
     #read_file("test_decomp.c")
-    read_file("grep.c")
+    read_file(filename)
     fix_types()
     fix_utypes()
     filter_functions()
     filter_structs()
     filter_typedefs() # This needs to replace not filter
-    filter_comments()
+    #filter_comments()
     filter_library_calls() # This needs to be automated
     filter_random() # Needs to be more robust
     #filter_structs()
@@ -31,14 +37,20 @@ def main():
     #print_code()
     output_code()
     recompile()
+    recompile_info()
 
 def add_libraries():
+    global fixes
+    fixes += 3
+
     code.insert(0, "#include <stdlib.h>")
     code.insert(0, "#include <stdio.h>")
     code.insert(0, "#include <strings.h>")
+    code.insert(0, "#include <libintl.h>")
 
 def filter_random():
     global code
+    global fixes
 
     filter_whitespace()
 
@@ -51,6 +63,7 @@ def filter_random():
     while i < len(code):
         if "FUN" in code[i] and "{" in code[i+1] and "0x0" in code[i+2] and "(*" in code[i+2] and "return;" in code[i+3] and "}" in code[i+4]:
             print("[*] Removing strange function pointer return")
+            fixes += 1 # Fixes
             i += 5
         else:
             temp.append(code[i])
@@ -64,6 +77,7 @@ def filter_random():
             var = line[line.index(","):line.index(");")]
             print("Value is: " + str(var))
             temp.append("scanf(" + var[1:] + ");")
+            fixes += 1 # Fixes
         else:
             temp.append(line)
     code = temp
@@ -85,10 +99,11 @@ def fix_utypes():
     fix_type("ulong", "long")
     fix_type(" true ", " 1 ")
     fix_type(" false ", " 0 ")
-    fix_type("code *", "*fun_ptr")
+    fix_type("code *", "fun_ptr *")
 
 def fix_types(): # Add comments describing fixes
     global code
+    global fixes
 
     print("Fixing undefined types")
     i = 0
@@ -102,6 +117,8 @@ def fix_types(): # Add comments describing fixes
             fix_type(old + " ", new + " ")
             fix_type("(" + old + ")", "(" + new + ")")
 
+            fixes += 1 # Fixes
+
             i += 1
         elif "eh_frame_hdr" in line:
             code = code[i:]
@@ -109,11 +126,14 @@ def fix_types(): # Add comments describing fixes
 
 def fix_type(old, new):
     global code
+    global fixes
 
     temp = []
 
     for line in code:
         temp.append(line.replace(old, new))
+        if line.replace(old, new) != line:
+            fixes += 1
 
     code = temp
 
@@ -151,15 +171,19 @@ def filter_structs():
 
 def filter_typedefs():
     global code
+    global fixes
 
     temp = []
     for i in range(0, len(code)):
         if "typedef struct" not in code[i]:
             temp.append(code[i])
+        else:
+            fixes += 1
     code = temp
 
 def filter_function(name):
     global code
+    global fixes
     print("[*] Removing function " + name)
 
     found = False
@@ -167,6 +191,7 @@ def filter_function(name):
         if name in code[i] and "{" in code[i+2]:
             found = True
             break
+            fixes += 1
     if found:
         k = 0
         j = i + 3
@@ -186,7 +211,10 @@ def filter_function(name):
 
 def filter_struct(name):
     global code
+    global fixes
+
     print("[*] Removing struct " + name)
+    fixes += 1
 
     for i in range(0, len(code)):
         if name in code[i] and "{" in code[i]:
@@ -252,25 +280,104 @@ def output_code():
             f.write(line + "\n")
     print("done")
 
-def recompile():
-    result = subprocess.run(["gcc", "output_decomp.c", "-o", "output_recomp"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(result.stdout)
+def recompile_info():
+    global filename
+    result = subprocess.run(["gcc", filename, "-o", "output_recomp2"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     errors = []
     warnings = []
     for line in result.stderr.decode().split("\n"):
-        if "output" in line and "error" in line:
-            #errors.append(line[line.find(" "):])
+        if "ls" in line and "error" in line:
             errors.append(line)
+        if "ls" in line and "warning" in line:
+            warnings.append(line)
+    
+    print("")
+    print("Original has " + str(len(warnings)) + " warnings")
+    print("Original has " + str(len(errors)) + " errors")
+
+def recompile():
+    global fixes
+
+    result = subprocess.run(["gcc", "output_decomp.c", "-o", "output_recomp"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    errors = []
+    warnings = []
+    a = 0
+    b = 0
+    c = 0
+    d = 0
+    e = 0
+    f = 0
+    g = 0
+    h = 0
+    i = 0
+    j = 0
+    k = 0
+    l = 0
+    m = 0
+    for line in result.stderr.decode().split("\n"):
+        if "output" in line and "error" in line:
+            if "assignment to expression" in line:
+            #errors.append(line[line.find(" "):])
+                a += 1
+            elif "too many arguments" in line:
+                b += 1
+            elif "too few arguments" in line:
+                c += 1
+            elif "conflicting types" in line:
+                d += 1
+            elif "undeclared" in line and "DAT_" in line:
+                print(line)
+                e += 1
+            elif "undeclared" in line:
+                f += 1
+            elif "void value not ignored" in line:
+                g += 1
+            elif "unknown type name" in line:
+                h += 1
+            elif "cast specifies array type" in line:
+                i += 1
+            elif "expected " in line and "before" in line:
+                j += 1
+            elif "invalid use of void" in line:
+                k += 1
+            elif "invalid operands to binary" in line:
+                l += 1
+            elif "request for member" in line:
+                m += 1
+            else:
+                errors.append(line)
         if "output" in line and "warning" in line:
             warnings.append(line)
     
     errors.sort(key=lambda x: x[x.find(" "):])
 
+    print("="*80)
+    print("")
+
     for line in errors:
         print(line)
 
     print("")
+    print("="*80)
+
+    print("")
+    print("Assignment to expression with array type: " + str(a))
+    print("Too many arguments: " + str(b))
+    print("Too few arguments: " + str(c))
+    print("Conflicting types: " + str(d))
+    print("DAT_* is undeclared: " + str(e))
+    print("Other is undeclared: " + str(f))
+    print("Void value not ignored: " + str(g))
+    print("Unknown type name: " + str(h))
+    print("Casts to array: " + str(i))
+    print("Expected ) or ; before something: " + str(j))
+    print("Invalid use of void expression: " + str(k))
+    print("Invalid operands to binary: " + str(l))
+    print("Request for member not in struct: " + str(m))
+    print("Other errors: " + str(len(errors)))
+    print("")
     print("Found " + str(len(warnings)) + " warnings")
-    print("Found " + str(len(errors)) + " errors")
+    print("")
+    print("Made " + str(fixes) + " fixes")
 
 main()
