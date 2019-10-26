@@ -1,0 +1,3 @@
+# clang -S -emit-llvm file.c
+./clang-static-analyzer/bin/scan-build -enable-checker alpha.security.taint.TaintPropagation,alpha.security.ArrayBoundV2,security.insecureAPI.strcpy,security.insecureAPI.gets llc $1
+rm temp

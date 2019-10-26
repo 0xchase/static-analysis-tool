@@ -1,2 +1,0 @@
-./clang-static-analyzer/bin/scan-build -enable-checker alpha.security.taint.TaintPropagation,alpha.security.ArrayBoundV2,security.insecureAPI.strcpy,security.insecureAPI.gets gcc -O3 $1 -o temp 
-rm temp
