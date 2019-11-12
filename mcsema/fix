@@ -1,0 +1,7 @@
+IDAPYTHON=/home/$USER/ida-6.9/python/lib/python27.zip
+GOOGLEMODULE=$(python -c "import os; import sys; import google; sys.stdout.write(os.path.dirname(google.__file__))")
+pushd ${GOOGLEMODULE}/..
+chmod +w ${IDAPYTHON}
+zip -rv ${IDAPYTHON} google/
+chmod -w ${IDAPYTHON}
+popd
